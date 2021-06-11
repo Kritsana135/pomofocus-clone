@@ -1,36 +1,65 @@
 import { Button } from "@chakra-ui/button"
 import { Box, Center, Flex, Text } from "@chakra-ui/layout"
-import { useContext, useEffect, useState } from "react"
+import { useCallback, useContext, useEffect, useState } from "react"
 import { SettingContext } from "../contexts/SettingContext"
 import { ThemeContext, themes } from "../contexts/ThemeContext"
+import { secondToString } from "../utils"
 
 function Timer() {
   type timerState = "stop" | "start" | "pause"
   type menu = "focus" | "shortBreak" | "longBreak"
+
+  // context state
   const { theme, setStyle } = useContext(ThemeContext)
   const { setting } = useContext(SettingContext)
+  const { time, autoStartBreak, autoStartFocus } = setting
+
+  // component state
   const [selectedMenu, setSelectedMenu] = useState<menu>("focus")
   const [second, setSecond] = useState<number>(
     setting.time[selectedMenu].min * 60
   )
+  const [breakCount, setBreakCount] = useState(0)
   const [isStart, setIsStart] = useState<timerState>("stop")
 
-  const secondToString = (second: number) => {
-    return (second - (second %= 60)) / 60 + (9 < second ? ":" : ":0") + second
-  }
+  const handleChangeMode = useCallback(
+    (key: menu, second: number) => {
+      setIsStart("stop")
+      setSelectedMenu(key)
+      setSecond(second)
+      setStyle(themes[key])
 
-  const handleChangeMode = (key: menu, second: number) => {
-    setIsStart("stop")
-    setSelectedMenu(key)
-    setSecond(second)
-    setStyle(themes[key])
-  }
+      if (key !== "focus") {
+        document.title = secondToString(second) + " - Time for a break"
+      } else {
+        document.title = secondToString(second) + " - Time to work!"
+      }
+    },
+    [setStyle]
+  )
+
   useEffect(() => {
     let interValSeccond: NodeJS.Timeout
     if (isStart === "start") {
+      if (second === 0) {
+        if (selectedMenu === "focus") {
+          if (breakCount === setting.longBreakInterval) {
+            handleChangeMode("longBreak", time["longBreak"].min * 60)
+            setBreakCount(0)
+          } else {
+            setBreakCount((breakCount) => breakCount + 1)
+            handleChangeMode("shortBreak", time["shortBreak"].min * 60)
+          }
+          autoStartBreak && setIsStart("start")
+        } else {
+          handleChangeMode("focus", time["focus"].min * 60)
+          autoStartFocus && setIsStart("start")
+        }
+      }
       interValSeccond = setInterval(() => {
         setSecond((second) => second - 1)
       }, 1000)
+      document.title = secondToString(second) + " - Time for a break"
     }
     if (isStart === "stop") {
       setSecond(setting.time[selectedMenu].min * 60)
@@ -39,7 +68,17 @@ function Timer() {
     return () => {
       clearInterval(interValSeccond)
     }
-  }, [isStart, second, selectedMenu, setting])
+  }, [
+    isStart,
+    second,
+    selectedMenu,
+    setting,
+    breakCount,
+    handleChangeMode,
+    time,
+    autoStartBreak,
+    autoStartFocus,
+  ])
 
   return (
     <Center>

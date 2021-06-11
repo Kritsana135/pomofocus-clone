@@ -11,25 +11,9 @@ const setting = {
   longBreakInterval: 4,
   alarmSound: {
     selectedIndex: 0,
-    level: 50,
+    level: 0.5,
     repeat: 1,
-    allSound: [
-      {
-        name: "Kitchen",
-      },
-      {
-        name: "Bell",
-      },
-      {
-        name: "Bird",
-      },
-      {
-        name: "Digital",
-      },
-      {
-        name: "Wood",
-      },
-    ],
+    allSound: ["Kitchen", "Bell", "Bird", "Digital", "Wood"],
   },
   tickingSound: {
     selectedIndex: 0,

@@ -11,7 +11,6 @@ import {
   ModalOverlay,
 } from "@chakra-ui/modal"
 import { NumberInput, NumberInputField } from "@chakra-ui/number-input"
-import { Select } from "@chakra-ui/select"
 import {
   Slider,
   SliderFilledTrack,
@@ -23,6 +22,13 @@ import { ChangeEvent, useContext, useEffect, useState } from "react"
 import { SettingContext } from "../contexts/SettingContext"
 import { ThemeContext } from "../contexts/ThemeContext"
 import SubSetting from "./SubSetting"
+
+// sound import
+import useSound from "use-sound"
+import switchSfx from "../sound/switch-1.wav"
+import { Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/menu"
+import { ChevronDownIcon } from "@chakra-ui/icons"
+import useAlarmSound from "../hooks/useAlarmSound"
 
 const SettingModal = ({
   isOpen = false,
@@ -37,6 +43,14 @@ const SettingModal = ({
   const { setting, updateSetting } = useContext(SettingContext)
   const [temptSetting, setTemptSetting] = useState(setting)
   const { time, alarmSound, tickingSound } = temptSetting
+  const alarmVol = alarmSound.level
+  const selectedIndex = alarmSound.selectedIndex
+  const [playSwitch] = useSound(switchSfx, { volume: alarmVol })
+  const [play] = useAlarmSound({
+    alarmVol,
+    selectedIndex,
+    repeat: 1,
+  })
 
   const realUpdate = () => {
     onClose()
@@ -59,6 +73,7 @@ const SettingModal = ({
   }
 
   useEffect(() => {
+    console.log("call clear setting effect")
     setTemptSetting(setting)
   }, [isOpen, setting])
 
@@ -76,6 +91,7 @@ const SettingModal = ({
                 ...temptSetting,
                 autoStartBreak: !temptSetting.autoStartBreak,
               })
+              playSwitch()
             }}
           />
         ),
@@ -94,6 +110,7 @@ const SettingModal = ({
                 ...temptSetting,
                 autoStartFocus: !temptSetting.autoStartFocus,
               })
+              playSwitch()
             }}
           />
         ),
@@ -127,29 +144,32 @@ const SettingModal = ({
         id: "as",
         keySetting: "Alarm Sound",
         TuneComponent: (
-          <Select
-            width="40%"
-            defaultValue={alarmSound.allSound[alarmSound.selectedIndex].name}
-            placeholder={alarmSound.allSound[alarmSound.selectedIndex].name}
-            size="lg"
-            onChange={(e) => {
-              setTemptSetting({
-                ...temptSetting,
-                alarmSound: {
-                  ...temptSetting.alarmSound,
-                  selectedIndex: parseInt(e.target.value),
-                },
-              })
-            }}
-          >
-            {alarmSound.allSound.map(({ name }, index) => {
-              return (
-                <option value={index} key={index}>
-                  {name}
-                </option>
-              )
-            })}
-          </Select>
+          <Menu>
+            <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+              {alarmSound.allSound[alarmSound.selectedIndex]}
+            </MenuButton>
+            <MenuList zIndex="100">
+              {alarmSound.allSound.map((name, index) => {
+                return (
+                  <MenuItem
+                    key={index}
+                    onClick={() => {
+                      setTemptSetting({
+                        ...temptSetting,
+                        alarmSound: {
+                          ...temptSetting.alarmSound,
+                          selectedIndex: index,
+                        },
+                      })
+                      play()
+                    }}
+                  >
+                    {name}
+                  </MenuItem>
+                )
+              })}
+            </MenuList>
+          </Menu>
         ),
       },
       {
@@ -158,23 +178,23 @@ const SettingModal = ({
           <Box width="40%">
             <Slider
               aria-label="slider-ex-4"
-              defaultValue={alarmSound.level}
-              onChange={(val) => {
-                console.log(val)
+              defaultValue={alarmSound.level * 100}
+              onChangeEnd={(val) => {
                 setTemptSetting({
                   ...temptSetting,
                   alarmSound: {
                     ...temptSetting.alarmSound,
-                    level: val,
+                    level: val / 100,
                   },
                 })
+                play()
               }}
             >
               <SliderTrack bg={theme.bgLow}>
                 <SliderFilledTrack bg={theme.background} />
               </SliderTrack>
               <SliderThumb boxSize={6} backgroundColor="black" color="white">
-                {alarmSound.level}
+                {Math.floor(alarmSound.level * 100)}
               </SliderThumb>
             </Slider>
           </Box>
@@ -213,33 +233,31 @@ const SettingModal = ({
         id: "ts",
         keySetting: "Ticking Sound",
         TuneComponent: (
-          <Select
-            width="40%"
-            size="lg"
-            defaultValue={
-              tickingSound.allTicking[tickingSound.selectedIndex].name
-            }
-            placeholder={
-              tickingSound.allTicking[tickingSound.selectedIndex].name
-            }
-            onChange={(e) => {
-              setTemptSetting({
-                ...temptSetting,
-                tickingSound: {
-                  ...temptSetting.tickingSound,
-                  selectedIndex: parseInt(e.target.value),
-                },
-              })
-            }}
-          >
-            {tickingSound.allTicking.map(({ name }, index) => {
-              return (
-                <option value={index} key={index}>
-                  {name}
-                </option>
-              )
-            })}
-          </Select>
+          <Menu>
+            <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+              {tickingSound.allTicking[tickingSound.selectedIndex].name}
+            </MenuButton>
+            <MenuList zIndex="100">
+              {tickingSound.allTicking.map(({ name }, index) => {
+                return (
+                  <MenuItem
+                    key={index}
+                    onClick={() => {
+                      setTemptSetting({
+                        ...temptSetting,
+                        tickingSound: {
+                          ...temptSetting.tickingSound,
+                          selectedIndex: index,
+                        },
+                      })
+                    }}
+                  >
+                    {name}
+                  </MenuItem>
+                )
+              })}
+            </MenuList>
+          </Menu>
         ),
       },
       {
@@ -250,7 +268,6 @@ const SettingModal = ({
               aria-label="slider-ex-4"
               defaultValue={tickingSound.level}
               onChange={(val) => {
-                console.log(val)
                 setTemptSetting({
                   ...temptSetting,
                   tickingSound: {
@@ -275,10 +292,6 @@ const SettingModal = ({
 
   return (
     <>
-      {console.log(
-        alarmSound.selectedIndex,
-        alarmSound.allSound[alarmSound.selectedIndex].name
-      )}
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
