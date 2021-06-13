@@ -3,6 +3,7 @@ import { Box, Center, Flex, Text } from "@chakra-ui/layout"
 import { useCallback, useContext, useEffect, useState } from "react"
 import { SettingContext } from "../contexts/SettingContext"
 import { ThemeContext, themes } from "../contexts/ThemeContext"
+import useAlarmSound from "../hooks/useAlarmSound"
 import { secondToString } from "../utils"
 
 function Timer() {
@@ -12,7 +13,7 @@ function Timer() {
   // context state
   const { theme, setStyle } = useContext(ThemeContext)
   const { setting } = useContext(SettingContext)
-  const { time, autoStartBreak, autoStartFocus } = setting
+  const { time, autoStartBreak, autoStartFocus, alarmSound } = setting
 
   // component state
   const [selectedMenu, setSelectedMenu] = useState<menu>("focus")
@@ -21,6 +22,11 @@ function Timer() {
   )
   const [breakCount, setBreakCount] = useState(0)
   const [isStart, setIsStart] = useState<timerState>("stop")
+  const [playAlarm] = useAlarmSound({
+    alarmVol: alarmSound.level,
+    repeat: alarmSound.repeat,
+    selectedIndex: alarmSound.selectedIndex,
+  })
 
   const handleChangeMode = useCallback(
     (key: menu, second: number) => {
@@ -28,7 +34,6 @@ function Timer() {
       setSelectedMenu(key)
       setSecond(second)
       setStyle(themes[key])
-
       if (key !== "focus") {
         document.title = secondToString(second) + " - Time for a break"
       } else {
@@ -55,6 +60,7 @@ function Timer() {
           handleChangeMode("focus", time["focus"].min * 60)
           autoStartFocus && setIsStart("start")
         }
+        playAlarm()
       }
       interValSeccond = setInterval(() => {
         setSecond((second) => second - 1)
@@ -78,6 +84,7 @@ function Timer() {
     time,
     autoStartBreak,
     autoStartFocus,
+    playAlarm,
   ])
 
   return (

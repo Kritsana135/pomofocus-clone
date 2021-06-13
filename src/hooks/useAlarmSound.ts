@@ -33,6 +33,7 @@ function useAlarmSound({
     { play: playWood, option: wood },
   ]
 
+
   useEffect(() => {
     console.log("call useAlarmSound effect", repeatCount)
     console.log(alarmVol, selectedIndex)
@@ -64,11 +65,11 @@ function useAlarmSound({
     }
   }, [repeatCount, isPlayAlarm])
 
-  const play = () => {
+  const playAlarm = () => {
     setIsPlayAlarm(true)
   }
 
-  return [play] as const
+  return [playAlarm] as const
 }
 
 export default useAlarmSound

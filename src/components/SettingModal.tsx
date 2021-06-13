@@ -18,7 +18,7 @@ import {
   SliderTrack,
 } from "@chakra-ui/slider"
 import { Switch } from "@chakra-ui/switch"
-import { ChangeEvent, useContext, useEffect, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import { SettingContext } from "../contexts/SettingContext"
 import { ThemeContext } from "../contexts/ThemeContext"
 import SubSetting from "./SubSetting"
@@ -29,6 +29,8 @@ import switchSfx from "../sound/switch-1.wav"
 import { Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/menu"
 import { ChevronDownIcon } from "@chakra-ui/icons"
 import useAlarmSound from "../hooks/useAlarmSound"
+import InputNumber from "./InputNumber"
+import useTickingSound from "../hooks/useTickingSound"
 
 const SettingModal = ({
   isOpen = false,
@@ -46,30 +48,19 @@ const SettingModal = ({
   const alarmVol = alarmSound.level
   const selectedIndex = alarmSound.selectedIndex
   const [playSwitch] = useSound(switchSfx, { volume: alarmVol })
-  const [play] = useAlarmSound({
+  const [playAlarm] = useAlarmSound({
     alarmVol,
     selectedIndex,
     repeat: 1,
+  })
+  const [playTicking] = useTickingSound({
+    vol: tickingSound.level,
+    selectedIndex: tickingSound.selectedIndex,
   })
 
   const realUpdate = () => {
     onClose()
     updateSetting(temptSetting)
-  }
-
-  const handleChangeTime = (e: ChangeEvent<HTMLInputElement>) => {
-    let key = e.target.name as keyof typeof temptSetting.time
-    let temptVar = {
-      ...temptSetting.time[key],
-      min: parseInt(e.target.value),
-    }
-    setTemptSetting({
-      ...temptSetting,
-      time: {
-        ...temptSetting.time,
-        [key]: temptVar,
-      },
-    })
   }
 
   useEffect(() => {
@@ -121,21 +112,17 @@ const SettingModal = ({
         id: "lbi",
         keySetting: "Long Break interval",
         TuneComponent: (
-          <NumberInput
-            defaultValue={setting.longBreakInterval}
-            min={0}
-            {...inputStyle}
-            width="70px"
-          >
-            <NumberInputField
-              onChange={(e) => {
-                setTemptSetting({
-                  ...temptSetting,
-                  longBreakInterval: parseInt(e.target.value),
-                })
-              }}
-            />
-          </NumberInput>
+          <InputNumber
+            value={setting.longBreakInterval}
+            width={"70px"}
+            isDecimal={true}
+            callback={(changeNum: number) => {
+              setTemptSetting({
+                ...temptSetting,
+                longBreakInterval: changeNum,
+              })
+            }}
+          />
         ),
       },
     ],
@@ -161,7 +148,7 @@ const SettingModal = ({
                           selectedIndex: index,
                         },
                       })
-                      play()
+                      playAlarm()
                     }}
                   >
                     {name}
@@ -179,6 +166,7 @@ const SettingModal = ({
             <Slider
               aria-label="slider-ex-4"
               defaultValue={alarmSound.level * 100}
+              focusThumbOnChange={false}
               onChangeEnd={(val) => {
                 setTemptSetting({
                   ...temptSetting,
@@ -187,7 +175,7 @@ const SettingModal = ({
                     level: val / 100,
                   },
                 })
-                play()
+                playAlarm()
               }}
             >
               <SliderTrack bg={theme.bgLow}>
@@ -250,6 +238,7 @@ const SettingModal = ({
                           selectedIndex: index,
                         },
                       })
+                      playTicking()
                     }}
                   >
                     {name}
@@ -267,7 +256,8 @@ const SettingModal = ({
             <Slider
               aria-label="slider-ex-4"
               defaultValue={tickingSound.level}
-              onChange={(val) => {
+              focusThumbOnChange={false}
+              onChangeEnd={(val) => {
                 setTemptSetting({
                   ...temptSetting,
                   tickingSound: {
@@ -275,6 +265,7 @@ const SettingModal = ({
                     level: val,
                   },
                 })
+                playTicking()
               }}
             >
               <SliderTrack bg={theme.bgLow}>
@@ -290,6 +281,7 @@ const SettingModal = ({
     ],
   ]
 
+  console.log("rendered setting modal")
   return (
     <>
       <Modal isOpen={isOpen} onClose={onClose}>
@@ -299,7 +291,7 @@ const SettingModal = ({
             TIMER SETTING
           </ModalHeader>
           <ModalCloseButton color="rgb(187, 187, 187)" />
-          <ModalBody>
+          <ModalBody color="rgb(85, 85, 85)" fontWeight="bold">
             <Box
               borderTop="1px solid rgba(182, 165, 166, 0.2)"
               padding="20px 0px"
@@ -308,43 +300,70 @@ const SettingModal = ({
               <Text>Time (minutes)</Text>
               <Flex justifyContent="space-between">
                 <Box width="98px">
-                  <Text>Pomodoro</Text>
-                  <NumberInput
-                    defaultValue={time.focus.min}
-                    min={0}
-                    {...inputStyle}
-                  >
-                    <NumberInputField
-                      name="focus"
-                      onChange={handleChangeTime}
-                    />
-                  </NumberInput>
+                  <Text fontSize="14px" color="rgb(187, 187, 187)">
+                    Pomodoro
+                  </Text>
+                  <InputNumber
+                    value={time.focus.min}
+                    width={"98px"}
+                    isDecimal={false}
+                    callback={(changeNum: number) => {
+                      setTemptSetting({
+                        ...temptSetting,
+                        time: {
+                          ...temptSetting.time,
+                          focus: {
+                            ...temptSetting.time.focus,
+                            min: changeNum,
+                          },
+                        },
+                      })
+                    }}
+                  />
                 </Box>
                 <Box width="98px">
-                  <Text>ShortBreak</Text>
-                  <NumberInput
-                    defaultValue={time.shortBreak.min}
-                    min={0}
-                    {...inputStyle}
-                  >
-                    <NumberInputField
-                      name="shortBreak"
-                      onChange={handleChangeTime}
-                    />
-                  </NumberInput>
+                  <Text fontSize="14px" color="rgb(187, 187, 187)">
+                    ShortBreak
+                  </Text>
+                  <InputNumber
+                    value={time.shortBreak.min}
+                    width={"98px"}
+                    isDecimal={false}
+                    callback={(changeNum: number) => {
+                      setTemptSetting({
+                        ...temptSetting,
+                        time: {
+                          ...temptSetting.time,
+                          shortBreak: {
+                            ...temptSetting.time.shortBreak,
+                            min: changeNum,
+                          },
+                        },
+                      })
+                    }}
+                  />
                 </Box>
                 <Box width="98px">
-                  <Text>Long Break</Text>
-                  <NumberInput
-                    defaultValue={time.longBreak.min}
-                    min={0}
-                    {...inputStyle}
-                  >
-                    <NumberInputField
-                      name="longBreak"
-                      onChange={handleChangeTime}
-                    />
-                  </NumberInput>
+                  <Text fontSize="14px" color="rgb(187, 187, 187)">
+                    Long Break
+                  </Text>
+                  <InputNumber
+                    value={time.longBreak.min}
+                    width={"98px"}
+                    isDecimal={false}
+                    callback={(changeNum: number) => {
+                      setTemptSetting({
+                        ...temptSetting,
+                        time: {
+                          ...temptSetting.time,
+                          longBreak: {
+                            ...temptSetting.time.longBreak,
+                            min: changeNum,
+                          },
+                        },
+                      })
+                    }}
+                  />
                 </Box>
               </Flex>
             </Box>
