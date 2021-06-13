@@ -1,7 +1,7 @@
 import TickingSlow from "../sound/ticking-slow.mp3"
 import TickingFast from "../sound/ticking-fast.mp3"
 import useSound from "use-sound"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 
 type useTickingSoundProps = {
   vol: number
